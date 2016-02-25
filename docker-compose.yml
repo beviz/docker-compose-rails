@@ -1,0 +1,15 @@
+db:
+  image: postgres:9.4.4
+  volumes:
+    - '/var/www/data/postgres/:/var/lib/postgresql/data'
+  ports:
+    - '5432'
+web:
+  build: .
+  volumes:
+    - '/var/www:/var/www'
+  links:
+    - db
+  ports:
+    - '80:80'
+    - '10022:22'
