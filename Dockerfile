@@ -10,8 +10,7 @@ RUN apt-get install -y nodejs
 
 # tools
 RUN apt-get install -y rsync
-RUN apt-get install -y ghostscript
-RUN apt-get install -y libav-tools
+RUN apt-get install -y tmux
 
 ENV HOME /root
 
@@ -20,10 +19,20 @@ CMD ["/sbin/my_init"]
 EXPOSE 80
 
 # enable ssh
-RUN usermod -a -G docker_env app
 RUN rm -f /etc/service/sshd/down
 RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 EXPOSE 22
+
+# add ssh keys
+ADD authorized_keys /root/.ssh/
+ADD authorized_keys /home/app/.ssh/
+RUN chmod 600 /root/.ssh/authorized_keys
+RUN chown app:app /home/app/.ssh/authorized_keys
+RUN chmod 600 /home/app/.ssh/authorized_keys
+
+# app user
+RUN usermod -a -G docker_env app
+RUN passwd -u app
 
 # Timezone
 RUN echo Asia/Beijing > /etc/timezone
@@ -32,20 +41,5 @@ RUN echo Asia/Beijing > /etc/timezone
 # passenger
 RUN rm -f /etc/service/nginx/down
 RUN rm /etc/nginx/sites-enabled/default
-ADD config.d/nginx.conf /etc/nginx/sites-enabled/default.conf
-ADD config.d/rails_env.conf /etc/nginx/main.d/rails-env.conf
-
-# add ssh keys
-ADD authorized_keys /root/.ssh/
-RUN chmod 600 /root/.ssh/authorized_keys
-
-# install bundle
-# WORKDIR /tmp
-# ADD Gemfile /tmp/Gemfile
-# ADD Gemfile.lock /tmp/Gemfile.lock
-# RUN bundle install
-
-
-# RUN mkdir /var/www
-# ADD . /var/www
-# RUN chown -R app:app /var/www
+ADD config.d/nginx.conf /etc/nginx/sites-enabled/default
+ADD config.d/rails-env.conf /etc/nginx/main.d/rails-env.conf
